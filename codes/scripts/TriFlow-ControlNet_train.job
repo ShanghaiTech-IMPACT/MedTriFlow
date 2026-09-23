@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Activate the Gen environment before running this script.
+
+PROJECT_ROOT="${PROJECT_ROOT:-/path/to/project}"
+cd "$PROJECT_ROOT/codes"
+export PYTHONPATH="$PWD"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
+
+RESUME_ARGS=()
+if [[ -n "${RESUME_FROM:-}" ]]; then
+    RESUME_ARGS=(--resume_from "$RESUME_FROM")
+fi
+
+# Use four visible GPUs and map them to logical devices 0..3 below.
+exec python run.py \
+    -b configs/TriFlow-ControlNet.yaml \
+    -l "$PROJECT_ROOT/exp" \
+    -n TriFlow-ControlNet-SVR \
+    data.params.latent_path="$PROJECT_ROOT/exp/test_TriplaneVQVAE_infer/infer_latent/" \
+    data.params.cond_path="$PROJECT_ROOT/exp/test_TriplaneVQVAE_infer/infer_SVR_latent/" \
+    data.params.split_path="$PROJECT_ROOT/data/split-All.npy" \
+    data.params.num_workers=4 \
+    data.params.val_num_workers=0 \
+    "${RESUME_ARGS[@]}"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Activate the Gen environment before running this script.
+
+PROJECT_ROOT="${PROJECT_ROOT:-/path/to/project}"
+cd "$PROJECT_ROOT/codes"
+export PYTHONPATH="$PWD"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# Use four visible GPUs; Lightning sees them as logical devices 0..3.
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
+
+# Inference reuses run.py and the existing TriplaneVQVAE test_step.
+# The overrides are kept here so the base config is not modified.
+exec python run.py \
+    -b configs/TriplaneVQVAE.yaml \
+    -l "$PROJECT_ROOT/exp" \
+    -n TriplaneVQVAE \
+    --seed 6033 \
+    --not_find_unused_parameters \
+    data.params.split_path="$PROJECT_ROOT/data/split-All.npy" \
+    --test "$PROJECT_ROOT/ckpts/TriplaneVQVAE.ckpt" \
+    --output "$PROJECT_ROOT/exp/test_TriplaneVQVAE_infer/infer_volume/"

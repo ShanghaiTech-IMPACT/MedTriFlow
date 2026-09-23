@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Activate the Gen environment before running this script.
+
+PROJECT_ROOT="${PROJECT_ROOT:-/path/to/project}"
+cd "$PROJECT_ROOT/codes"
+export PYTHONPATH="$PWD"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# Keep the same four-GPU mapping as the latent inference script.
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
+
+# Reuse the existing TriplaneVQVAE test_step for FDK task volumes.
+exec python run.py \
+    -b configs/TriplaneVQVAE.yaml \
+    -l "$PROJECT_ROOT/exp" \
+    -n TriplaneVQVAE \
+    --seed 6033 \
+    --not_find_unused_parameters \
+    data.params.split_path="$PROJECT_ROOT/data/split-All.npy" \
+    data.params.gen_latent=True \
+    data.params.task_path="$PROJECT_ROOT/data/SVR_data/FDK/" \
+    data.params.path_include="['CTChestAbdomen','CTHeadNeck','CTLegs']" \
+    model.params.resolution=-1 \
+    --test "$PROJECT_ROOT/ckpts/TriplaneVQVAE.ckpt" \
+    --output "$PROJECT_ROOT/exp/test_TriplaneVQVAE_infer/infer_SVR_latent/"

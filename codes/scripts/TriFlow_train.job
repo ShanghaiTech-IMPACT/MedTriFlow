@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH -J TriFlow
+#SBATCH -o job%j.o
+#SBATCH -e job%j.e
+#SBATCH -p bme_gpu18
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:4
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=400G
+#SBATCH --time=5-00:00:00
+
+# Activate the Gen environment before submitting this job.
+PROJECT_ROOT="${PROJECT_ROOT:-/path/to/project}"
+cd "$PROJECT_ROOT/codes"
+export PYTHONPATH="$PROJECT_ROOT/codes"
+export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:32"
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
+
+RESUME_ARGS=()
+if [[ -n "${RESUME_FROM:-}" ]]; then
+    RESUME_ARGS=(--resume_from "$RESUME_FROM")
+fi
+
+python run.py -b configs/TriFlow.yaml \
+              -l "$PROJECT_ROOT/exp/" \
+              -n TriFlow \
+              data.params.latent_path="$PROJECT_ROOT/exp/test_TriplaneVQVAE_infer/infer_latent/" \
+              data.params.split_path="$PROJECT_ROOT/data/split-All.npy" \
+              "${RESUME_ARGS[@]}"

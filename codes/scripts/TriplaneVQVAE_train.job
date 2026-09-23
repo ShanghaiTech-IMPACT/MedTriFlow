@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Activate the Gen environment before running this script.
+
+PROJECT_ROOT="${PROJECT_ROOT:-/path/to/project}"
+cd "$PROJECT_ROOT/codes"
+export PYTHONPATH="$PWD"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
+
+# Runtime path override; training parameters stay in the base config.
+python run.py \
+    -b configs/TriplaneVQVAE.yaml \
+    -l "$PROJECT_ROOT/exp" \
+    -n TriplaneVQVAE \
+    --seed 6033 \
+    data.params.split_path="$PROJECT_ROOT/data/split-All.npy"
